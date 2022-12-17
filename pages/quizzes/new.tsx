@@ -2,33 +2,35 @@ import React, { ChangeEvent, FC, useState } from 'react';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 type ChangedText = (e: ChangeEvent<HTMLInputElement>) => void;
-
 type Choice = { content: string; rhyme: string };
+type Quiz = { commentary: string; choices: Choice[] };
 
 const URL = 'http://localhost:8000/api/quizzes/';
 
 const INICIAL_CHOICE_NUMBER = 3;
 
 const New: FC = () => {
-  const initialChoice: Choice = { content: '', rhyme: '' };
-  const initialChoices: Choice[] = [...Array(INICIAL_CHOICE_NUMBER)].map(
-    () => initialChoice
-  );
-  const [commentary, setCommentary] = useState<string>('');
-  const [choices, setChoices] = useState<Choice[]>(initialChoices);
+  const initialQuizSet = (): Quiz => {
+    const initialChoice: Choice = { content: '', rhyme: '' };
+    const initialChoices: Choice[] = [...Array(INICIAL_CHOICE_NUMBER)].map(
+      () => initialChoice
+    );
+    return { commentary: '', choices: initialChoices };
+  };
 
-  const onCommentaryChanged: ChangedText = (e) => {
-    setCommentary(e.target.value);
+  const [quiz, setQuiz] = useState<Quiz>(initialQuizSet);
+
+  const onQuizCommentaryChanged: ChangedText = (e) => {
+    setQuiz({ ...quiz, commentary: e.target.value });
   };
 
   const onResisterClicked = (): void => {
-    console.log(commentary);
-    console.log(choices);
+    console.log(quiz);
 
     const options: AxiosRequestConfig = {
       url: URL,
       method: 'POST',
-      data: { quiz: { commentary: commentary, choices: choices } },
+      data: { quiz: quiz },
     };
 
     axios(options)
@@ -41,11 +43,12 @@ const New: FC = () => {
       });
   };
 
-  const onChoiceChanged = (
+  const onQuizChoiceChanged = (
     e: ChangeEvent<HTMLInputElement>,
     changedIndex: number
   ): void => {
-    const changedChoice: Choice[] = choices.map(
+    const stateChoices = quiz.choices;
+    const changedChoices: Choice[] = stateChoices.map(
       (choice: Choice, index: number): Choice => {
         const eventTarget: EventTarget & HTMLInputElement = e.target;
         return changedIndex === index
@@ -53,31 +56,35 @@ const New: FC = () => {
           : choice;
       }
     );
-
-    setChoices(changedChoice);
+    setQuiz({ ...quiz, choices: changedChoices });
   };
 
   return (
     <>
       <div>New Quiz</div>
       <label>解説</label>
-      <input type="text" value={commentary} onChange={onCommentaryChanged} />
-      {choices.map((choice: Choice, index: number) => {
+      <input
+        type="text"
+        name="commentary"
+        value={quiz.commentary}
+        onChange={onQuizCommentaryChanged}
+      />
+      {quiz.choices.map((choice: Choice, index: number) => {
         return (
           <div key={index}>
             <label>選択肢</label>
             <input
               type="text"
               name="content"
-              value={choices[index].content}
-              onChange={(e) => onChoiceChanged(e, index)}
+              value={quiz.choices[index].content}
+              onChange={(e) => onQuizChoiceChanged(e, index)}
             />
             <label>母音</label>
             <input
               type="text"
               name="rhyme"
-              value={choices[index].rhyme}
-              onChange={(e) => onChoiceChanged(e, index)}
+              value={quiz.choices[index].rhyme}
+              onChange={(e) => onQuizChoiceChanged(e, index)}
             />
           </div>
         );
